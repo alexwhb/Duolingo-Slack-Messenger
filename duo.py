@@ -4,6 +4,7 @@ from functools import cached_property
 from typing import Iterable, Optional
 from datetime import datetime
 import duolingo
+from dotenv import load_dotenv
 
 
 class Duo:
@@ -105,33 +106,48 @@ class Duo:
     @staticmethod
     def last_active(username: str, stats: dict) -> Optional[datetime]:
         if stats[username]['point_diff'] > 0:
-            return datetime.strptime(stats[username]['updated'], '%Y-%m-%d %H:%M:%S.%f')
+            return stats[username]['updated']  # datetime.strptime(stats[username]['updated'], '%Y-%m-%d %H:%M:%S.%f')
         else:
-            for history in stats[username]['history']:
-                if history['point_diff'] > 0:
-                    return datetime.strptime(history['exact_time_reported'], '%Y-%m-%d %H:%M:%S.%f')
+            for date in stats[username]['history']:
+                history_stats = stats[username]['history'][date]
+                if history_stats['point_diff'] > 0:
+                    return stats[username][
+                        'updated']  # datetime.strptime(date['exact_time_reported'], '%Y-%m-%d %H:%M:%S.%f')
         return None
 
     @staticmethod
-    def streak_days(username: str, stats: dict):
-        last_active = datetime.strptime(stats[username]['last_active'], '%Y-%m-%d %H:%M:%S.%f')
-        now = datetime.now()
+    def streak_days(username: str, stats: dict) -> int:
+        last_active = stats[username]['last_active']
+        if last_active is None or last_active == 'None':
+            return 0
 
+        if isinstance(last_active, str):
+            last_active = datetime.strptime(stats[username]['last_active'], '%Y-%m-%d %H:%M:%S.%f')
+
+        now = datetime.now()
         diff = last_active - now
         if diff.days == 1:
             return stats[username]['streak_days'] + 1
         else:
             return 0
 
+    @staticmethod
+    def get_score_diff(username: str, current_score: int, data: dict) -> int:
+        if username not in data:
+            return 0
+        else:
+            sorted_keys = sorted(dict.keys(data[username]['history']))
+            return current_score - data[username]['history'][sorted_keys[-1]]['points']
+
     def update_stats_for_username(self, stats, user):
         username = user['username']
         date = datetime.now().strftime("%m/%d/%y")
         if username in stats:
             stats[username]['total_points'] = user['points']
-            stats[username]['last_active'] = str(self.last_active(username, stats))
             stats[username]['point_diff'] = self.get_score_diff(username, user['points'], stats)
-            stats[username]['streak_days'] = self.streak_days(username, stats)
+            stats[username]['last_active'] = str(self.last_active(username, stats))
             stats[username]['updated'] = str(datetime.now())
+            stats[username]['streak_days'] = self.streak_days(username, stats)
             stats[username]['history'][date] = {
                 'points': user['points'],
                 'point_diff': self.get_score_diff(username, user['points'], stats),
@@ -153,16 +169,8 @@ class Duo:
                 }
             }
 
-    @staticmethod
-    def get_score_diff(username: str, current_score: int, data: dict) -> int:
-        # sorted_keys = sorted(dict.keys(data.get(username)[username]['history']))
-        if username not in data:
-            return 0
-        else:
-            sorted_keys = sorted(dict.keys(data[username]['history']))
-            return current_score - data[username]['history'][sorted_keys[-1]]
-
 
 if __name__ == '__main__':
+    load_dotenv()
     duo = Duo(os.getenv("DUO_USER_NAME"), os.getenv("DUO_PASSWORD"))
-    # duo.track_users(getenv("USERS_TO_TRACK").split(","))
+    duo.track_users(os.getenv("USERS_TO_TRACK").split(","))
