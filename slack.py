@@ -6,7 +6,7 @@ import requests
 
 class Slack:
     def __init__(self):
-        self._webhook_url = getenv("USERS_TO_TRACK")
+        self._webhook_url = getenv("SLACK_WEB_HOOK_URL")
 
     def send_message(self, message_text):
         payload = {"text": message_text}
