@@ -39,8 +39,8 @@ class Slack:
 
         """
         for username in dict.keys(stats_data):
-            output_message = f"*{username} Stats:* \n" \
-                             f"\tTotal XP: *{stats_data[username]['total_points']}*:star:\n" \
+            output_message = f"*{username}* Stats:\n" \
+                             f"\tTotal XP: *{stats_data[username]['total_points']:,}* :star:\n" \
                              f"\tPoints since last last day active: *+{stats_data[username]['point_diff']}XP*\n" \
-                             f"\t{self._format_streak(stats_data[username]['streak_days'])}\n"
+                             f"\t{self._format_streak(stats_data[username]['streak_days'])}\n\n\n"
             self.send_message(output_message)
