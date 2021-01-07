@@ -28,7 +28,7 @@ class Slack:
     @staticmethod
     def _format_streak(streak_days: int):
         if streak_days > 0:
-            return f"Your streak {streak_days} days :tada:"
+            return f"Your streak *{streak_days} days* :tada:"
         else:
             return "Sadly you have no streak going :sob::sob::sob:"
 
