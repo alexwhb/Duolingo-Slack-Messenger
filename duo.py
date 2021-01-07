@@ -2,7 +2,7 @@ import json
 import os
 from functools import cached_property
 from typing import Iterable, Optional
-from datetime import datetime
+from datetime import datetime, timedelta
 import duolingo
 from dotenv import load_dotenv
 
@@ -124,9 +124,12 @@ class Duo:
         if isinstance(last_active, str):
             last_active = datetime.strptime(stats[username]['last_active'], '%Y-%m-%d %H:%M:%S.%f')
 
-        now = datetime.now()
+        # because we are taking a sample at the exact same time every day... it's very likely that
+        # the new sample will be later than the previous by maybe even a few milliseconds, so
+        # we subtract an hour from our current time to give it a much greater error tolerance.
+        now = datetime.now() - timedelta(hours=1, minutes=0)
         diff = last_active - now
-        if diff.days == 1:
+        if diff.days == -1:
             return stats[username]['streak_days'] + 1
         else:
             return 0
@@ -136,7 +139,7 @@ class Duo:
         if username not in data:
             return 0
         else:
-            sorted_keys = sorted(dict.keys(data[username]['history']))
+            sorted_keys = list(data[username]['history'].keys())
             return current_score - data[username]['history'][sorted_keys[-1]]['points']
 
     def update_stats_for_username(self, stats, user):
@@ -162,7 +165,7 @@ class Duo:
                 'updated': str(datetime.now()),
                 'history': {
                     date: {
-                        'points': user['points'],
+                        'points' : user['points'],
                         'point_diff': 0,
                         'exact_time_reported': str(datetime.now())
                     }
